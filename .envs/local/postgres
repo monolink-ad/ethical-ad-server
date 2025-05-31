@@ -1,7 +1,0 @@
-# PostgreSQL
-# ------------------------------------------------------------------------------
-POSTGRES_HOST="hkg1.clusters.zeabur.com"
-POSTGRES_PORT=32127
-POSTGRES_DB="dev"
-POSTGRES_USER="root"
-POSTGRES_PASSWORD="m4d87n5Y01kC9ZjoFDAO6Ssx23VIeTPb"

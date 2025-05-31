@@ -1,36 +1,17 @@
-"""
-Django settings for the Ethical Ad Server project.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/4.2/topics/settings/
-
-For the full list of settings and their values, see
-https://docs.djangoproject.com/en/4.2/ref/settings/
-"""
-
 import json
 import logging
 import os
 import sys
-
-import environ
 import stripe
+from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
-
+import dotenv
+dotenv.load_dotenv()
 
 log = logging.getLogger(__name__)  # noqa
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")
-)
-
-env = environ.Env()
-try:
-    env.read_env(os.path.join(BASE_DIR, ".envs/local/django"))
-    env.read_env(os.path.join(BASE_DIR, ".envs/local/postgres"))
-except ImproperlyConfigured:
-    log.info("Unable to read env file. Assuming environment is already set.")
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # This is a bit of a hack to allow us to import the ethicalads_ext package
 # which contains private extensions to the ad server.
@@ -139,11 +120,11 @@ SITE_ID = 1  # Required for allauth
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", default="dev"),
-        "USER": env("POSTGRES_USER", default="root"),
-        "PASSWORD": env("POSTGRES_PASSWORD"),
-        "HOST": env("POSTGRES_HOST", default="hkg1.clusters.zeabur.com"),
-        "PORT": env.int("POSTGRES_PORT", default=32127),
+        "NAME": os.getenv("POSTGRES_DB", default="dev"),
+        "USER": os.getenv("POSTGRES_USER", default="root"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "HOST": os.getenv("POSTGRES_HOST", default="hkg1.clusters.zeabur.com"),
+        "PORT": os.getenv("POSTGRES_PORT", default=32127),
     }
 }
 
@@ -170,13 +151,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 # ```
 # * Then backup & truncate the old offers table:
 # django-admin archive_offers --start-date 2021-11-01 --end-date 2022-07-01
-ADSERVER_OFFER_DB_TABLE = env("ADSERVER_OFFER_DB_TABLE", default=None)
+ADSERVER_OFFER_DB_TABLE = os.getenv("ADSERVER_OFFER_DB_TABLE", default=None)
 
 
 # Add support for a read replica, mostly used in reporting.
-DATABASE_ROUTERS = env("DATABASE_ROUTER", default=[])
+DATABASE_ROUTERS = os.getenv("DATABASE_ROUTER", default=[])
 if DATABASE_ROUTERS:
-    REPLICA = env.db("REPLICA_DATABASE_URL", default=None)
+    REPLICA = os.getenv("REPLICA_DATABASE_URL", default=None)
     if not REPLICA:
         raise ImproperlyConfigured(
             "You have defined a DATABASE_ROUTER, but not a REPLICA_DATABASE_URL. Please use both."
@@ -233,7 +214,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 # In development, emails are not sent and just logged to the console
 # --------------------------------------------------------------------------
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-SERVER_EMAIL = env("SERVER_EMAIL", default="noreply@example.com")
+SERVER_EMAIL = os.getenv("SERVER_EMAIL", default="noreply@example.com")
 DEFAULT_FROM_EMAIL = SERVER_EMAIL
 EMAIL_TIMEOUT = 5
 
@@ -241,15 +222,15 @@ EMAIL_TIMEOUT = 5
 # --------------------------------------------------------------------------
 # For sending email through Front and processing Front webhooks
 FRONT_BACKEND = "frontbackend.backend.EmailBackend"
-FRONT_TOKEN = env("FRONT_TOKEN", default=None)
-FRONT_CHANNEL = env("FRONT_CHANNEL", default=None)
-FRONT_AUTHOR = env("FRONT_AUTHOR", default=None)
-FRONT_SENDER_NAME = env("FRONT_SENDER_NAME", default=None)
-FRONT_ARCHIVE = env.bool("FRONT_ARCHIVE", default=False)
+FRONT_TOKEN = os.getenv("FRONT_TOKEN", default=None)
+FRONT_CHANNEL = os.getenv("FRONT_CHANNEL", default=None)
+FRONT_AUTHOR = os.getenv("FRONT_AUTHOR", default=None)
+FRONT_SENDER_NAME = os.getenv("FRONT_SENDER_NAME", default=None)
+FRONT_ARCHIVE = os.getenv("FRONT_ARCHIVE", default=False)
 FRONT_ENABLED = FRONT_TOKEN and FRONT_CHANNEL and FRONT_AUTHOR
 # This last value is only needed for processing webhooks.
 # It comes from the webhooks "App" in Front's settings
-FRONT_WEBHOOK_SECRET = env("FRONT_WEBHOOK_SECRET", default=None)
+FRONT_WEBHOOK_SECRET = os.getenv("FRONT_WEBHOOK_SECRET", default=None)
 
 
 # Internationalization
@@ -287,7 +268,7 @@ STATICFILES_DIRS = [
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # Even for dev, this should be fully qualified
 # This allows showing images from the ad server elsewhere more easily
-MEDIA_URL = env("MEDIA_URL", default="/media/")
+MEDIA_URL = os.getenv("MEDIA_URL", default="/media/")
 
 # Logging
 # See: https://docs.djangoproject.com/en/4.2/ref/settings/#logging
@@ -443,11 +424,11 @@ REST_FRAMEWORK = {
 # https://dj-stripe.readthedocs.io/
 # --------------------------------------------------------------------------
 STRIPE_KEY_DEFAULT = "sk_live_x"
-STRIPE_LIVE_SECRET_KEY = env("STRIPE_SECRET_KEY", default=STRIPE_KEY_DEFAULT)
-STRIPE_TEST_SECRET_KEY = env("STRIPE_TEST_SECRET_KEY", default="sk_test_x")
-STRIPE_CONNECT_CLIENT_ID = env("STRIPE_CONNECT_CLIENT_ID", default=None)
+STRIPE_LIVE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", default=STRIPE_KEY_DEFAULT)
+STRIPE_TEST_SECRET_KEY = os.getenv("STRIPE_TEST_SECRET_KEY", default="sk_test_x")
+STRIPE_CONNECT_CLIENT_ID = os.getenv("STRIPE_CONNECT_CLIENT_ID", default=None)
 STRIPE_LIVE_MODE = False  # Set to True in production
-DJSTRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default=None)
+DJSTRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", default=None)
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = "id"
 DJSTRIPE_USE_NATIVE_JSONFIELD = False
 if not DJSTRIPE_WEBHOOK_SECRET:
@@ -470,8 +451,8 @@ stripe.api_version = "2020-08-27"
 # PayPal
 # Used for automated PayPal payouts only
 # --------------------------------------------------------------------------
-PAYPAL_CLIENT_ID = env("PAYPAL_CLIENT_ID", default=None)
-PAYPAL_SECRET_KEY = env("PAYPAL_SECRET_KEY", default=None)
+PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID", default=None)
+PAYPAL_SECRET_KEY = os.getenv("PAYPAL_SECRET_KEY", default=None)
 
 
 # Slack
@@ -480,16 +461,16 @@ PAYPAL_SECRET_KEY = env("PAYPAL_SECRET_KEY", default=None)
 # and when SLACK_TOKEN is set
 # https://django-slack.readthedocs.io/
 # --------------------------------------------------------------------------
-SLACK_TOKEN = env("SLACK_TOKEN", default=None)
-SLACK_CHANNEL = env("SLACK_CHANNEL", default="#ads-notifications")
-SLACK_USERNAME = env("SLACK_USERNAME", default="Ethical Ad Server")
-SLACK_FAIL_SILENTLY = env.bool("SLACK_FAIL_SILENTLY", default=True)
+SLACK_TOKEN = os.getenv("SLACK_TOKEN", default=None)
+SLACK_CHANNEL = os.getenv("SLACK_CHANNEL", default="#ads-notifications")
+SLACK_USERNAME = os.getenv("SLACK_USERNAME", default="Ethical Ad Server")
+SLACK_FAIL_SILENTLY = os.getenv("SLACK_FAIL_SILENTLY", default=True)
 
 
 # CORS
 # https://github.com/adamchainz/django-cors-headers
 # --------------------------------------------------------------------------
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", default=[])
 CORS_ALLOW_HEADERS = ["*"]
 CORS_URLS_REGEX = r"^/api/v1/similar-.*/$"
 
@@ -497,8 +478,8 @@ CORS_URLS_REGEX = r"^/api/v1/similar-.*/$"
 # Metabase
 # Graphing and BI tool
 # --------------------------------------------------------------------------
-METABASE_SITE_URL = env("METABASE_SITE_URL", default="http://metabase:3000")
-METABASE_SECRET_KEY = env("METABASE_SECRET_KEY", default=None)
+METABASE_SITE_URL = os.getenv("METABASE_SITE_URL", default="http://metabase:3000")
+METABASE_SECRET_KEY = os.getenv("METABASE_SECRET_KEY", default=None)
 # Maps metabase questions by name to the ID
 METABASE_QUESTIONS = {
     "PUBLISHER_PERFORMANCE": 1,
@@ -522,7 +503,7 @@ METABASE_DASHBOARDS = {
 
 # Plausible Analytics
 # --------------------------------------------------------------------------
-PLAUSIBLE_DOMAIN = env("PLAUSIBLE_DOMAIN", default="server.ethicalads.io")
+PLAUSIBLE_DOMAIN = os.getenv("PLAUSIBLE_DOMAIN", default="server.ethicalads.io")
 
 
 # Django countries
@@ -542,7 +523,7 @@ COUNTRIES_OVERRIDE = {
 # Anyone may use the ad server under the terms of the license.
 # However, permission to use the EthicalAds brand, logo, and trademarks,
 # are not conferred with the permission to use the code.
-ADSERVER_ETHICALADS_BRANDING = env.bool("ADSERVER_ETHICALADS_BRANDING", default=False)
+ADSERVER_ETHICALADS_BRANDING = os.getenv("ADSERVER_ETHICALADS_BRANDING", default=False)
 
 # The URL where the Django admin is served
 ADSERVER_ADMIN_URL = "admin"
@@ -550,7 +531,7 @@ ADSERVER_ADMIN_URL = "admin"
 # The backend to be used by the ad server
 # Set to `None` to disable all advertising
 # This can be useful to set temporarily during migrations
-ADSERVER_DECISION_BACKEND = env(
+ADSERVER_DECISION_BACKEND = os.getenv(
     "ADSERVER_DECISION_BACKEND",
     default="adserver.decisionengine.backends.ProbabilisticFlightBackend",
 )
@@ -558,7 +539,7 @@ ADSERVER_DECISION_BACKEND = env(
 # The backend(s) to be used by the ad server
 # for topic and keyword analysis.
 # By default this is empty, you can find options in ``adserver.analyzer.backends``
-ADSERVER_ANALYZER_BACKEND = env.list(
+ADSERVER_ANALYZER_BACKEND = os.getenv(
     "ADSERVER_ANALYZER_BACKEND",
     default=[],
 )
@@ -573,34 +554,34 @@ if ADSERVER_EXT:
 # Whether Do Not Track is enabled for the ad server
 ADSERVER_DO_NOT_TRACK = False
 
-ADSERVER_ANALYTICS_ID = env("ADSERVER_ANALYTICS_ID", default=None)
-ADSERVER_PRIVACY_POLICY_URL = env("ADSERVER_PRIVACY_POLICY_URL", default=None)
-ADSERVER_PUBLISHER_POLICY_URL = env("ADSERVER_PUBLISHER_POLICY_URL", default=None)
+ADSERVER_ANALYTICS_ID = os.getenv("ADSERVER_ANALYTICS_ID", default=None)
+ADSERVER_PRIVACY_POLICY_URL = os.getenv("ADSERVER_PRIVACY_POLICY_URL", default=None)
+ADSERVER_PUBLISHER_POLICY_URL = os.getenv("ADSERVER_PUBLISHER_POLICY_URL", default=None)
 ADSERVER_CLICK_RATELIMITS = []
 ADSERVER_VIEW_RATELIMITS = []
-ADSERVER_BLOCKLISTED_USER_AGENTS = env.list(
+ADSERVER_BLOCKLISTED_USER_AGENTS = os.getenv(
     "ADSERVER_BLOCKLISTED_USER_AGENTS", default=[]
 )
-ADSERVER_BLOCKLISTED_REFERRERS = env.list("ADSERVER_BLOCKLISTED_REFERRERS", default=[])
-ADSERVER_MINIMUM_PAYOUT = env.int("ADSERVER_MINIMUM_PAYOUT", default=50)
+ADSERVER_BLOCKLISTED_REFERRERS = os.getenv("ADSERVER_BLOCKLISTED_REFERRERS", default=[])
+ADSERVER_MINIMUM_PAYOUT = os.getenv("ADSERVER_MINIMUM_PAYOUT", default=50)
 # Recording views is highly discouraged in production but useful in development
 ADSERVER_RECORD_VIEWS = True
 ADSERVER_HTTPS = False  # Should be True in most production setups
 ADSERVER_STICKY_DECISION_DURATION = 0
 
 # For customer support emails
-ADSERVER_SUPPORT_TO_EMAIL = env("ADSERVER_SUPPORT_TO_EMAIL", default=None)
-ADSERVER_SUPPORT_FORM_ACTION = env("ADSERVER_SUPPORT_FORM_ACTION", default=None)
+ADSERVER_SUPPORT_TO_EMAIL = os.getenv("ADSERVER_SUPPORT_TO_EMAIL", default=None)
+ADSERVER_SUPPORT_FORM_ACTION = os.getenv("ADSERVER_SUPPORT_FORM_ACTION", default=None)
 
 with open(os.path.join(BASE_DIR, "package.json"), encoding="utf-8") as fd:
     ADSERVER_VERSION = json.load(fd)["version"]
 
 # Additional middleware for setting the user's real IP
 # and translating the IP into a geo for ad targeting.
-ADSERVER_IPADDRESS_MIDDLEWARE = env(
+ADSERVER_IPADDRESS_MIDDLEWARE = os.getenv(
     "ADSERVER_IPADDRESS_MIDDLEWARE", default="adserver.middleware.IpAddressMiddleware"
 )
-ADSERVER_GEOIP_MIDDLEWARE = env(
+ADSERVER_GEOIP_MIDDLEWARE = os.getenv(
     "ADSERVER_GEOIP_MIDDLEWARE", default="adserver.middleware.GeoIpMiddleware"
 )
 
@@ -611,3 +592,53 @@ if ADSERVER_IPADDRESS_MIDDLEWARE:
     MIDDLEWARE.append(ADSERVER_IPADDRESS_MIDDLEWARE)
 if ADSERVER_GEOIP_MIDDLEWARE:
     MIDDLEWARE.append(ADSERVER_GEOIP_MIDDLEWARE)
+
+from celery.schedules import crontab
+
+
+# Allow to use weak passwords for development
+AUTH_PASSWORD_VALIDATORS = []
+
+# Set the local IPs which are needed for Django Debug Toolbar
+INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
+if os.getenv("USE_DOCKER", default=False):
+    import socket
+
+    hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+    INTERNAL_IPS += [ip[:-1] + "1" for ip in ips]
+
+
+# django-debug-toolbar
+# https://django-debug-toolbar.readthedocs.io
+# --------------------------------------------------------------------------
+MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
+INSTALLED_APPS += ["debug_toolbar", "django_extensions"]
+DEBUG_TOOLBAR_CONFIG = {
+    "DISABLE_PANELS": ["debug_toolbar.panels.redirects.RedirectsPanel"],
+    "SHOW_TEMPLATE_CONTEXT": True,
+}
+
+LOGGING["loggers"]["adserver"]["level"] = "DEBUG"
+LOGGING["loggers"]["ethicalads_ext"]["level"] = "DEBUG"
+
+
+# Celery settings for asynchronous tasks
+# http://docs.celeryproject.org
+# --------------------------------------------------------------------------
+CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", default=os.getenv("REDIS_URL", default=None))
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_CREATE_MISSING_QUEUES = True
+
+CELERY_BEAT_SCHEDULE = {
+    "dev-update-reports": {
+        "task": "adserver.tasks.daily_update_reports",
+        "schedule": crontab(minute="*/5"),
+    },
+}
+
+CORS_ALLOWED_ORIGINS = ["https://ethical-ad-server.zeabur.app", "http://ethical-ad-server.zeabur.app"]
+
+# Send front emails to the console
+FRONT_BACKEND = "django.core.mail.backends.console.EmailBackend"
+FRONT_ENABLED = True
