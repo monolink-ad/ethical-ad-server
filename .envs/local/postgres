@@ -1,7 +1,7 @@
 # PostgreSQL
 # ------------------------------------------------------------------------------
-POSTGRES_HOST=postgres
-POSTGRES_PORT=5432
-POSTGRES_DB=ethicaladserver
-POSTGRES_USER=localuser
-POSTGRES_PASSWORD=localpass
+POSTGRES_HOST="hkg1.clusters.zeabur.com"
+POSTGRES_PORT=32127
+POSTGRES_DB="dev"
+POSTGRES_USER="root"
+POSTGRES_PASSWORD="m4d87n5Y01kC9ZjoFDAO6Ssx23VIeTPb"

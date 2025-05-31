@@ -20,16 +20,17 @@ from django.core.exceptions import ImproperlyConfigured
 
 log = logging.getLogger(__name__)  # noqa
 
-env = environ.Env()
-try:
-    env.read_env(env("ENV_FILE"))
-except ImproperlyConfigured:
-    log.info("Unable to read env file. Assuming environment is already set.")
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.abspath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")
 )
+
+env = environ.Env()
+try:
+    env.read_env(os.path.join(BASE_DIR, ".envs/local/django"))
+    env.read_env(os.path.join(BASE_DIR, ".envs/local/postgres"))
+except ImproperlyConfigured:
+    log.info("Unable to read env file. Assuming environment is already set.")
 
 # This is a bit of a hack to allow us to import the ethicalads_ext package
 # which contains private extensions to the ad server.
@@ -135,13 +136,17 @@ SITE_ID = 1  # Required for allauth
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 # --------------------------------------------------------------------------
-DB_PATH_SQLITE = os.path.join(BASE_DIR, "db.sqlite3")
 DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default=f"sqlite:///{DB_PATH_SQLITE}",
-    )
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("POSTGRES_DB", default="dev"),
+        "USER": env("POSTGRES_USER", default="root"),
+        "PASSWORD": env("POSTGRES_PASSWORD"),
+        "HOST": env("POSTGRES_HOST", default="hkg1.clusters.zeabur.com"),
+        "PORT": env.int("POSTGRES_PORT", default=32127),
+    }
 }
+
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
