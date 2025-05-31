@@ -222,3 +222,6 @@ whitenoise==6.9.0
     # via -r base.in
 yarl==1.18.3
     # via aiohttp
+
+# temp
+django-debug-toolbar
