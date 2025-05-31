@@ -642,3 +642,7 @@ CORS_ALLOWED_ORIGINS = ["https://ethical-ad-server.zeabur.app", "http://ethical-
 # Send front emails to the console
 FRONT_BACKEND = "django.core.mail.backends.console.EmailBackend"
 FRONT_ENABLED = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://monolink-ad.zeabur.app",
+]
